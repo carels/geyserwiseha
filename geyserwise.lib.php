@@ -10,15 +10,37 @@ class GeyserWise {
 		global $argv;
 		$this->settings = array();
 
-		if (count($argv) >= 3) {
+		$request_body = file_get_contents('php://input');
+		$payload = json_decode($request_body);
+		if (count($payload)) { 		// If we received a json payload, use that
+			$this->settings['txtUserName'] = $payload->user;
+			$this->settings['txtPassword'] = $payload->pass;
+			$this->settings['ddUnit'] = sprintf("%d", $payload->unit);
+
+			if ($payload->action) $this->settings['action'] = $payload->action;
+			if ($payload->value) $this->settings['value'] = $payload->value;
+
+		} elseif (count($argv) >= 3) {	// If we're running from the command line, use that
 			$this->settings['txtUserName'] = $argv[1];
 			$this->settings['txtPassword'] = $argv[2];
 			$this->settings['ddUnit'] = sprintf("%d", $argv[3]);
-		} else {
+		} else {		// Otherwise default to a GET / POST request
 			$this->settings['txtUserName'] = $_REQUEST['user'];
 			$this->settings['txtPassword'] = $_REQUEST['pass'];
 			$this->settings['ddUnit'] = sprintf("%d", $_REQUEST['unit']);
+			if ($_REQUEST['action']) $this->settings['action'] = $_REQUEST['action'];
+			if ($_REQUEST['value']) $this->settings['value'] = $_REQUEST['value'];
 		}
+
+		if ( (! $this->settings['txtUserName']) || (! $this->settings['txtPassword']) || (! $this->settings['ddUnit']) ) {
+			die ("Missing parameters");
+		}
+	}
+
+	function logMsg($msg) {
+		$fh = fopen("../logs/geyserwise.log", "a");
+		fwrite($fh, sprintf("[%s] %s\n", date('Y-m-d H:i:s'), $msg));
+		fclose($fh);
 	}
 
 	function geyserStats() {
@@ -43,7 +65,8 @@ class GeyserWise {
 		$this->geyserStats = array(
 				'geysertemp' => $matches[1],
 				'lastupdate' => sprintf("%s %s", $matches[2], $matches[3]),
-				'geyserelement' => ($matches[4] == 'true') ? 'ON' : 'OFF'
+				'lastupdateepoch' => strtotime(sprintf("%s %s UTC", $matches[2], $matches[3])),
+				'geyserelement' => ($matches[4] == 'true') ? 'on' : 'off'
 			);
 	}
 
@@ -73,10 +96,7 @@ class GeyserWise {
 
 	function shouldGeyserBeOn($stats) {
 
-		if ($stats['switchholiday'] == 'on') return false;
-
 		$thisTime = date('H:i');
-	//printf("Now is: %s\n", $thisTime);
 
 		$j=0;
 		$times = array();
@@ -90,26 +110,14 @@ class GeyserWise {
 			}
 		}
 		$this->geyserStats['timers'] = $times;
+		if ($stats['switchholiday'] == 'on') return false;	// If in holiday mode we won't actually check whether we're supposed to be on or off
 		foreach ($times as $t) {
-	//printf("Comparing now between: %s and %s\n", $t['on'], $t['off']);
-
 			if (($thisTime > $t['on']) && ($thisTime < $t['off'])) {
-	//printf("We should be ON\n");
 				return true;
 			}
 		}
-		
-	}
-
-	// Geyserwise loads the block temperatures from js which seems to dynmaically load the set value 'hardcoded' in the js. Bit of a pain to extract
-	function tooCold($stats, $expectedTemp = 55) {
-
-	printf("Checking: %s v. %s\n", $stats['geysertemp'], $expectedTemp);
-
-		if ($stats['geysertemp'] + 5 < $expectedTemp) return true;	 // Add a 5 degree buffer
-
 		return false;
-
+		
 	}
 
 	function doLogin() {
@@ -182,13 +190,13 @@ class GeyserWise {
 		);
 
 		
-		$this->geyserStats['manualOn'] = $rawstats->GetFormValue('switchgeyser');
-		$this->geyserStats['holidayMode'] = $rawstats->GetFormValue('switchholiday');
+		$this->geyserStats['manualOn'] = ($rawstats->GetFormValue('switchgeyser')) ? 'on' : 'off';
+		$this->geyserStats['holidayMode'] = ($rawstats->GetFormValue('switchholiday')) ? 'on' : 'off';
 		
 		if ($this->shouldGeyserBeOn($stats)) {
 			$this->geyserStats['geyserExpectedStatus'] = 'on';
 		} else {
-			$this->geyserStats['geyserExpectedStatus'] = 'on';
+			$this->geyserStats['geyserExpectedStatus'] = 'off';
 		}
 
 	}
@@ -223,20 +231,20 @@ class GeyserWise {
 
 		$this->getGeyserSettings();
 
-		$this->action = array();
+		$this->action = array(
+			'action' => 'switchholiday',
+			'value' => $mode,
+			'result' => 'IGNORE'		// Assume we ignored this request unless stated otherwise
+		);
 		switch ($mode) {
 
 		case 'on' : 	if ($this->geyserStats['holidayMode'] != 'on') {
 					$this->setGeyserWise(array('switchholiday' => 'on'), array('switchholiday' => 1));
-					$this->action['action'] = 'switchholiday';
-					$this->action['value'] = 'on';
 					$this->action['result'] = 'OK';
 				}
 				break;
 		case 'off' : 	if ($this->geyserStats['holidayMode'] == 'on') {
 					$this->setGeyserWise(array('switchholiday' => 'on'));	// We're saying value=on, but not checked. This is OK
-					$this->action['action'] = 'switchholiday';
-					$this->action['value'] = 'off';
 					$this->action['result'] = 'OK';
 				}
 				break;
@@ -248,20 +256,20 @@ class GeyserWise {
 
 		$this->getGeyserSettings();
 
-		$this->action = array();
+		$this->action = array(
+			'action' => 'switchgeyser',
+			'value' => $mode,
+			'result' => 'IGNORE'		// Assume we ignored this request unless stated otherwise
+		);
 		switch ($mode) {
 
 		case 'on' : 	if ($this->geyserStats['manualOn'] != 'on') {
 					$this->setGeyserWise(array('switchgeyser' => 'on'), array('switchgeyser' => 1));
-					$this->action['action'] = 'switchgeyser';
-					$this->action['value'] = 'on';
 					$this->action['result'] = 'OK';
 				}
 				break;
 		case 'off' : 	if ($this->geyserStats['manualOn'] == 'on') {
 					$this->setGeyserWise(array('switchgeyser' => 'on'));	// We're saying value=on, but not checked. This is OK
-					$this->action['action'] = 'switchgeyser';
-					$this->action['value'] = 'off';
 					$this->action['result'] = 'OK';
 				}
 				break;
@@ -270,6 +278,7 @@ class GeyserWise {
 	}
 
 	function output() {
+		$this->logMsg(json_encode($this->geyserStats));
 		echo json_encode($this->geyserStats); exit;
 	}
 
