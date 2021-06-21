@@ -191,4 +191,9 @@ lastupdate sometimes seems to be set in the future. Not sure if this is a proble
 Donate
 ------
 
-Like this? Feel free to donate some BTC here: bc1qhadp74cp404wgnu2rgu2r572suamjjzrf8p7cn
+Like this? Feel free to donate some BTC here: 
+```
+BTC: bc1qhadp74cp404wgnu2rgu2r572suamjjzrf8p7cn
+```            
+
+Need fast and reliable Internet at your home or office? Use IPComms - https://www.ipcomms.co.za/?referrerCode=1001123
