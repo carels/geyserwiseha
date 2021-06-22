@@ -3,6 +3,10 @@ Geyserwise Web Scraper for Home Assistant
 
 This code is based on the [Ultimate Web Scraper Toolkit](https://github.com/cubiclesoft/ultimate-web-scraper) and I have included the library for ease of use. I have not been able to get any assistance from Geyserwise to talk directly to their ESP2866 modules to locally gather this data and resorted to scraping the cloud service for the required info. Hopefully one day Geyserwise will give us API access so we can communicate directly to the geyser on the local LAN. 
 
+Geyserwise is a very popular product used in South Africa to manage your geyser and comes with an optional Wifi / GSM module to connect to their cloud servers. Unfortunately their hardware & cloud services does not offer any API interface so you can connect to with Home Assistant and that is what this code is trying to solve.
+
+Kindly sponsored by [IPComms - Internet Service Provider](https://www.ipcomms.co.za/?referrerCode=1001123). They are the guys to talk to if you need fast and reliable Internet at home or work, or telephones for your business. Backed by friendly and efficient customer support.
+
 Features
 --------
 
@@ -196,4 +200,4 @@ Like this? Feel free to donate some BTC here:
 BTC: bc1qhadp74cp404wgnu2rgu2r572suamjjzrf8p7cn
 ```            
 
-Need fast and reliable Internet at your home or office? Use IPComms - https://www.ipcomms.co.za/?referrerCode=1001123
+Need fast and reliable Internet at your home or office? Use [IPComms](https://www.ipcomms.co.za/?referrerCode=1001123)!
