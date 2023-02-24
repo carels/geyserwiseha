@@ -1,6 +1,10 @@
 Geyserwise Web Scraper for Home Assistant
 =========================================
 
+** UPDATE **
+Geyserwise has launched their Tuya wifi modules in 2022 and as I no longer have one of the older wifi modules this code is no longer maintained.
+
+
 This code is based on the [Ultimate Web Scraper Toolkit](https://github.com/cubiclesoft/ultimate-web-scraper) and I have included the library for ease of use. I have not been able to get any assistance from Geyserwise to talk directly to their ESP2866 modules to locally gather this data and resorted to scraping the cloud service for the required info. Hopefully one day Geyserwise will give us API access so we can communicate directly to the geyser on the local LAN. 
 
 Geyserwise is a very popular product used in South Africa to manage your geyser and comes with an optional Wifi / GSM module to connect to their cloud servers. Unfortunately their hardware & cloud services does not offer any API interface so you can connect to with Home Assistant and that is what this code is trying to solve.
